@@ -1,8 +1,8 @@
 import express from 'express'
 import cors from 'cors'
-import userRouter from './routes/userRouter.js'
-import groupRouter from './routes/groupRouter.js'
-import reviewRouter from './routes/reviewRouter.js'
+import userRouter from './routers/userRouter.js'
+import groupRouter from './routers/groupRouter.js'
+import reviewRouter from './routers/reviewRouter.js'
 
 const port = process.env.PORT || 3001
 
