@@ -3,20 +3,28 @@ import { initializeTestDb } from "./helper/test.js"
 import { insertTestUser } from "./helper/test.js"
 import { getToken } from "./helper/test.js"
 
-describe("Testing basic database functionality", () => {
+/*describe("Testing basic database functionality", () => {
     
-
+  const newUser = { username: "Testuser", email: "foo@test.com", password_hash: "password123" }
   let token = null
-    const newUser = { username: "Testuser", email: "foo@test.com", password_hash: "password123" }
     before(async () => {
       await initializeTestDb()
-        await insertTestUser(newUser)
-        token = await getToken(newUser)
+      //token = await getToken(newUser)
+       // console.log(token)
+    })
+    
+})*/
+
+describe("Testing protected routes", () => {
+    //let token = null
+    const newUser = { username: "Testuser", email: "foo@test.com", password_hash: "password123" }
+    before(async () => {
+        await initializeTestDb()
+        insertTestUser(newUser)
     })
 
-
     it("should sign up", async () => {
-        const newUser2 = { username: "Testuser2", email: "foo2@test.com", password_hash: "password123" }
+        const newUser2 = { username: "Testuser23", password_hash: "password123", email: "foo23@test.com"}
         const response = await fetch("http://localhost:3001/user/register", {
             method: "post",
             headers: { "Content-Type": "application/json"},
@@ -41,7 +49,7 @@ describe("Testing basic database functionality", () => {
     })
 
     it("should get all users", async () => {
-        const response = await fetch("http://localhost:3001/user/")
+        const response = await fetch("http://localhost:3001/user")
         const data = await response.json()
         expect(response.status).to.equal(200)
         expect(data).to.be.an("array").that.is.not.empty
@@ -55,5 +63,5 @@ describe("Testing basic database functionality", () => {
         expect(data).to.be.an("array").that.is.not.empty
         expect(data[0]).to.include.all.keys(["id", "user_desc"])
     })
-})
 
+})

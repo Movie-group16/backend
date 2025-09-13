@@ -44,10 +44,15 @@ router.post('/register', (req, res, next) => {
         return next(error)
     }
 
+
+    console.log(user)
+
     hash(user.password_hash, 10, (err, hashedPassword) => {
         if (err) {
             return next(err)
-        } 
+        }
+
+        console.log("hashed password " + hashedPassword)
 
         pool.query('INSERT INTO users (username, email, password_hash, user_desc) VALUES ($1, $2, $3, $4) RETURNING *',
             [user.username, user.email, hashedPassword, user.user_desc],
