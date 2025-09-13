@@ -23,6 +23,19 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/:username', (req, res, next) => {
+
+    const username = req.params.username
+
+    pool.query('SELECT * FROM users WHERE username=$1',[username], (error, results) => {
+        if (error) {
+            return next(error)
+        }
+
+        res.status(200).json(results.rows)
+    })
+})
+
 router.post('/register', (req, res, next) => {
     const { user } = req.body
 

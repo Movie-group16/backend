@@ -40,8 +40,16 @@ describe("Testing basic database functionality", () => {
         expect(data.email).to.equal(newUser.email)
     })
 
-    it("should get the user", async () => {
+    it("should get all users", async () => {
         const response = await fetch("http://localhost:3001/user/")
+        const data = await response.json()
+        expect(response.status).to.equal(200)
+        expect(data).to.be.an("array").that.is.not.empty
+        expect(data[0]).to.include.all.keys(["id", "user_desc"])
+    })
+
+    it("should get the user with username", async () => {
+        const response = await fetch(`http://localhost:3001/user/${newUser.username}`)
         const data = await response.json()
         expect(response.status).to.equal(200)
         expect(data).to.be.an("array").that.is.not.empty
@@ -49,11 +57,3 @@ describe("Testing basic database functionality", () => {
     })
 })
 
-/*
-describe("Testing user management", () => {
-    //const user = { username: "Testuser2", email: "foo2@test.com", password_hash: "password123" }
-      /*before(async () => {
-        //await insertTestUser(user)
-    })*/
-    
-})*/
