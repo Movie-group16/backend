@@ -47,4 +47,4 @@ create table reviews(
     review_text text,
     rating int check (rating >= 1 and rating <= 5),
     constraint fk_review_user foreign key (user_id) references users(id) on delete cascade
-)
+);

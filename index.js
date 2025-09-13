@@ -15,7 +15,7 @@ app.use(cors())
 
 
 app.use((err, req, res, next) => {
-    const sttusCode = res.status || 500
+    const statusCode = res.status || 500
 
     res.status(statusCode).json({
         error: {
