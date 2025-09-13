@@ -7,15 +7,15 @@ import reviewRouter from './routers/reviewRouter.js'
 const port = process.env.PORT || 3001
 
 const app = express()
+
+app.use(cors())
 app.use(express.json())
 app.use('/user', userRouter)
 app.use('/groups', groupRouter)
 app.use('/reviews', reviewRouter)
-app.use(cors())
-
 
 app.use((err, req, res, next) => {
-    const statusCode = res.status || 500
+    const statusCode = err.status || 500
 
     res.status(statusCode).json({
         error: {
