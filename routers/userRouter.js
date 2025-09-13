@@ -12,20 +12,31 @@ const SECRET = process.env.JWT_SECRET
 
 const router = Router()
 
+router.get('/', (req, res, next) => {
+
+    pool.query('SELECT * FROM users', (error, results) => {
+        if (error) {
+            return next(error)
+        }
+
+        res.status(200).json(results.rows)
+    })
+})
+
 router.post('/register', (req, res, next) => {
     const { user } = req.body
 
-    if (!user || !user.username || !user.email || !user.password) {
+    if (!user || !user.username || !user.email || !user.password_hash) {
         const error = new Error('Username, email and password are required')
         return next(error)
     }
 
-    hash(user.password, 10, (err, hashedPassword) => {
+    hash(user.password_hash, 10, (err, hashedPassword) => {
         if (err) {
             return next(err)
         } 
 
-        pool.query('INSERT INTO users (username, email, password, user_desc) VALUES ($1, $2, $3, $4) RETURNING *',
+        pool.query('INSERT INTO users (username, email, password_hash, user_desc) VALUES ($1, $2, $3, $4) RETURNING *',
             [user.username, user.email, hashedPassword, user.user_desc],
             (err, result) => {
                 if (err) {
@@ -39,7 +50,7 @@ router.post('/register', (req, res, next) => {
 router.post('/login', (req, res, next) => {
     const { user } = req.body
 
-    if (!user || !user.email || !user.password) {
+    if (!user || !user.email || !user.password_hash) {
         const err = new Error('Your email and password are required')
         err.status = 400
         return next(err)
@@ -57,7 +68,11 @@ router.post('/login', (req, res, next) => {
 
         const foundUser = result.rows[0]
 
-        compare(user.password, foundUser.password, (err, isMatch) => {
+        compare(user.password_hash, foundUser.password_hash, (err, isMatch) => {
+
+            console.log(foundUser.password_hash + ' ' + user.password_hash)
+            console.log(foundUser.email + ' ' + user.email)
+
             if (err) {
                 return next(err)
             } 

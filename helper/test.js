@@ -7,7 +7,7 @@ import { hash } from 'bcrypt'
 const __dirname = import.meta.dirname
 
 const initializeTestDb = () => {
-    const sql = fs.readFileSync(path.resolve(__dirname, '../testing.sql'), 'utf8')
+    const sql = fs.readFileSync(path.resolve(__dirname, '../init.sql'), 'utf8')
 
     pool.query(sql, (err) => {
         if (err) {
@@ -19,12 +19,12 @@ const initializeTestDb = () => {
 }
 
 const insertTestUser = (user) => {
-    hash(user.password, 10, (err, hashedPassword) => {
+    hash(user.password_hash, 10, (err, hashedPassword) => {
         if (err) {
             console.error('Error hashing password:', err)
             return
         }
-        pool.query('INSERT INTO users (username, email, password, user_desc) VALUES ($1, $2, $3, $4)',
+        pool.query('INSERT INTO users (username, email, password_hash, user_desc) VALUES ($1, $2, $3, $4)',
             [user.username, user.email, hashedPassword, user.user_desc],
             (err, result) => {
                 if (err) {
