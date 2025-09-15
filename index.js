@@ -3,6 +3,7 @@ import cors from 'cors'
 import userRouter from './routers/userRouter.js'
 import groupRouter from './routers/groupRouter.js'
 import reviewRouter from './routers/reviewRouter.js'
+import favouriteRouter from './routers/favouriteRouter.js'
 
 const port = process.env.PORT || 3001
 
@@ -13,6 +14,7 @@ app.use(express.json())
 app.use('/user', userRouter)
 app.use('/groups', groupRouter)
 app.use('/reviews', reviewRouter)
+app.use('/favourites', favouriteRouter)
 
 app.use((err, req, res, next) => {
     const statusCode = err.status || 500
