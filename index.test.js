@@ -64,4 +64,25 @@ describe("Testing protected routes", () => {
         expect(data[0]).to.include.all.keys(["id", "user_desc"])
     })
 
+    it("should delete the user with id 1", async () => {
+        const response = await fetch("http://localhost:3001/user/delete/1",{
+        method: "delete",
+        headers: { "Content-Type": "application/json"},
+    })
+        const data = await response.json()
+        expect(response.status).to.equal(200)
+        expect(data).to.include.all.keys("id")
+    })
+
+    it("should not create a new user without username, email or password", async () => { 
+        const response = await fetch("http://localhost:3001/user/register",{
+        method: "post",
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify({ user: null })
+      })
+        
+        const data = await response.json()
+        expect(response.status).to.equal(400)
+        expect(data).to.include.all.keys("error")
+    })
 })
