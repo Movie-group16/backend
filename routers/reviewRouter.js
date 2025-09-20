@@ -12,7 +12,6 @@ router.get('/', (req, res, next) => {
 
         res.status(200).json(results.rows)
     })
-
 })
 
 router.post('/', (req, res, next) => {
