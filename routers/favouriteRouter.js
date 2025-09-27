@@ -50,7 +50,7 @@ router.get("/user/:userId/favourites", async (req, res) => {
         res.json(result.rows);
 
     } catch (error) {
-        console.error("Error fetching fafvourites:", error);
+        console.error("Error fetching favourites:", error);
         res.status(500).json({ Error: "Internal server error"});
     }
 });
