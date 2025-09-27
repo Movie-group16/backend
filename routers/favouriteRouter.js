@@ -36,13 +36,23 @@ router.delete("/users/:userId/favourites/:movieId", async (req, res) => {
         console.error("Error removing favourite:", error);
         res.status(500).json({ error: "Internal server error" });
     }
+});
 
+router.get("/user/:userId/favourites", async (req, res) => {
+    const { userId } = req.params;
 
+    try {
+        const result = await pool.query(
+            "SELECT * FROM favourites WHERE user_id = $1",
+            [userId]
+        );
 
+        res.json(result.rows);
 
-
-
-    
-})
+    } catch (error) {
+        console.error("Error fetching favourites:", error);
+        res.status(500).json({ Error: "Internal server error"});
+    }
+});
 
 export default router
