@@ -36,11 +36,31 @@ router.get('/:username', (req, res, next) => {
     })
 })
 
+router.delete('/delete/:id', (req, res, next) => {
+    const { id } = req.params
+
+    console.log(`Deleting user with id: ${id}`)
+    pool.query('delete from users WHERE id = $1',
+        [id], (err, result) => {
+        if (err) {
+        console.error(err.message)
+        return next(err)
+        }
+        if (result.rowCount === 0) {
+            const error = new Error('user not found')
+            error.status = 404
+        return next(error)
+        }
+        return res.status(200).json({id:id})
+    })
+})
+
 router.post('/register', (req, res, next) => {
     const { user } = req.body
 
     if (!user || !user.username || !user.email || !user.password_hash) {
         const error = new Error('Username, email and password are required')
+        error.status = 400
         return next(error)
     }
 
