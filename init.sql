@@ -48,3 +48,16 @@ create table reviews(
     rating int check (rating >= 1 and rating <= 5),
     constraint fk_review_user foreign key (user_id) references users(id) on delete cascade
 );
+
+create table friends (
+    id serial primary key,
+    user_id int not null,
+    friend_id int not null,
+    status varchar(20) default 'pending', 
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+    foreign key (user_id) references users(id) on delete cascade,
+    foreign key (friend_id) references users(id) on delete cascade,
+    unique(user_id, friend_id),
+    check (user_id != friend_id) 
+);
