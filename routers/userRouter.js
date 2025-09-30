@@ -88,12 +88,12 @@ router.post('/register', (req, res, next) => {
 router.post('/login', (req, res, next) => {
     const { user } = req.body
 
-    if (!user || !user.email || !user.password_hash) {
+    if (!user || !user.nameoremail|| !user.password_hash) {
         const err = new Error('Your email and password are required')
         err.status = 400
         return next(err)
     }
-    pool.query('SELECT * FROM users WHERE username = $1 OR email = $2', [user.username, user.email], (err, result) => {
+    pool.query('SELECT * FROM users WHERE username = $1 OR email = $1', [user.nameoremail], (err, result) => {
         if (err) {
             return next(err)
         } 
