@@ -47,7 +47,7 @@ router.get('/requests', async (req, res) => {
         )
 
         res.status(200).json({ 
-            received_requests: result.rows,
+            requests: result.rows,
             count: result.rows.length 
         })
     } catch (error) {
