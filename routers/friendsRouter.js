@@ -2,10 +2,14 @@ import { pool } from "../helper/db.js"
 import { Router } from "express"
 import jwt from "jsonwebtoken"
 import dotenv from "dotenv"
+import { auth } from "../helper/auth.js"
 
 dotenv.config()
 
 const router = Router()
+
+// auth middleware to protect routes
+// router.use(auth)
 
 // get friends list
 router.get('/', async (req, res) => {
