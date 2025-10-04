@@ -14,11 +14,9 @@ router.get('/', (req, res, next) => {
     })
 })
 
-router.get('/:userId', (req, res, next) => {
-
-    const { user_id } = req.params
-
-    pool.query('SELECT * FROM reviews WHERE reviews.user_id = $1', [user_id], (err, result) => {
+router.get('/:id', (req, res, next) => {
+    
+    pool.query('SELECT * FROM reviews WHERE user_id = $1', [req.params.id], (err, result) => {
         if(err){
             return next(err)
         }
