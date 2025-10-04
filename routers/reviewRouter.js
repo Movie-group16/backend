@@ -14,6 +14,19 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/:userId'), (req, res, next) => {
+
+    const { user_id } = req.params
+
+    pool.query('SELECT * FROM reviews WHERE user_id = $1 RETURNING *', [user_id], (err, result) => {
+        if(err){
+            return next(err)
+        }
+
+        res.status(200).json(result.rows)
+    })
+}
+
 router.post('/', (req, res, next) => {
     const { review } = req.body
 
