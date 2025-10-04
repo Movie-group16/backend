@@ -14,9 +14,11 @@ router.get('/', (req, res, next) => {
     })
 })
 
-router.get('/:id', (req, res, next) => {
-    
-    pool.query('SELECT * FROM reviews WHERE user_id = $1', [req.params.id], (err, result) => {
+router.get('/:id/:movieId', (req, res, next) => {
+
+    pool.query('SELECT * FROM reviews WHERE user_id = $1 AND movie_id = $2', 
+        [req.params.id, req.params.movieId], 
+        (err, result) => {
         if(err){
             return next(err)
         }
