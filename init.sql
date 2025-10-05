@@ -4,7 +4,7 @@ drop table if exists groups;
 drop table if exists users cascade;
 drop table if exists favourites cascade;
 drop table if exists reviews cascade;
-
+drop table if exists friends cascade;
 
 
 create table users (
@@ -23,11 +23,31 @@ create table groups (
     group_rules text
 );
 
+create table discussion_start (
+    id serial primary key,
+    group_id int not null,
+    user_id int not null,
+    discussion_title text,
+    discussion_text text,
+    likes int,
+    dislikes int
+);
+
+create table discussion_comment (
+    id serial primary key,
+    discussion_start_id int not null,
+    user_id int not null,
+    comment_text text,
+    likes int,
+    dislikes int
+);
+
 create table groupUser (
     id serial primary key,
     user_id int not null,
     group_id int not null,
     is_admin boolean default false,
+    status varchar(20) default 'pending',
     foreign key (user_id) references users(id),
     constraint fk_groupUser_group foreign key (group_id) references groups(id) on delete cascade,
     unique(user_id, group_id)
