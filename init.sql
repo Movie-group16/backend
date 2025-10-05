@@ -23,6 +23,25 @@ create table groups (
     group_rules text
 );
 
+create table discussion_start (
+    id serial primary key,
+    group_id int not null,
+    user_id int not null,
+    discussion_title text,
+    discussion_text text,
+    likes int,
+    dislikes int
+);
+
+create table discussion_comment (
+    id serial primary key,
+    discussion_start_id int not null,
+    user_id int not null,
+    comment_text text,
+    likes int,
+    dislikes int
+);
+
 create table groupUser (
     id serial primary key,
     user_id int not null,
