@@ -5,6 +5,7 @@ import groupRouter from './routers/groupRouter.js'
 import reviewRouter from './routers/reviewRouter.js'
 import favouriteRouter from './routers/favouriteRouter.js'
 import friendsRouter from './routers/friendsRouter.js'
+import profileRouter from './routers/profileRouter.js'
 
 const port = process.env.PORT || 3001
 
@@ -17,7 +18,7 @@ app.use('/groups', groupRouter)
 app.use('/reviews', reviewRouter)
 app.use('/favourites', favouriteRouter)
 app.use('/friends', friendsRouter)
-
+app.use('/profile', profileRouter)
 app.use((err, req, res, next) => {
     const statusCode = err.status || 500
 
