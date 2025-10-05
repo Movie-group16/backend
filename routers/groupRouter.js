@@ -14,6 +14,24 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/:id', (req, res, next) => {
+    const { id } = req.params
+
+    pool.query('SELECT * FROM groups WHERE id = $1', [id], (error, results) => {
+        if (error) {
+            return next(error)
+        }
+
+        if (results.rows.length === 0) {
+            const error = new Error('Group not found')
+            error.status = 404
+            return next(error)
+        }
+
+        res.status(200).json(results.rows[0])
+    })
+})
+
 router.get('/memberships', (req, res, next) => {
 
     pool.query('SELECT username, email, user_desc, group_name, group_desc, group_rules FROM groupUser INNER JOIN users ON groupUser.user_id = users.id INNER JOIN groups ON groupUser.group_id = groups.id', (error, results) => {
