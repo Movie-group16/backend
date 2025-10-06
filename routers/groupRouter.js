@@ -14,6 +14,33 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/memberships', (req, res, next) => {
+  pool.query(`
+    SELECT 
+      gu.user_id, 
+      gu.group_id, 
+      gu.status,
+      gu.is_admin,
+      u.username, 
+      u.email, 
+      u.user_desc, 
+      g.id AS group_id,
+      g.owner_id,
+      g.group_name, 
+      g.group_desc, 
+      g.group_rules
+    FROM groupuser AS gu
+    INNER JOIN users AS u ON gu.user_id = u.id
+    INNER JOIN groups AS g ON gu.group_id = g.id
+  `, (error, results) => {
+    if (error) {
+      console.error('Error fetching memberships:', error)
+      return res.status(500).json({ error: error.message })
+    }
+    res.status(200).json(results.rows)
+  })
+})
+
 router.get('/:id', (req, res, next) => {
     const { id } = req.params
 
@@ -30,30 +57,6 @@ router.get('/:id', (req, res, next) => {
 
         res.status(200).json(results.rows[0])
     })
-})
-
-router.get('/memberships', (req, res, next) => {
-  pool.query(`
-    SELECT 
-        groupUser.user_id, 
-        groupUser.group_id, 
-        groupUser.status,
-        users.username, 
-        users.email, 
-        users.user_desc, 
-        groups.group_name, 
-        groups.group_desc, 
-        groups.group_rules,
-        groups.owner_id
-    FROM groups
-    LEFT JOIN groupUser 
-        ON groups.id = groupUser.group_id
-    LEFT JOIN users 
-        ON groupUser.user_id = users.id
-  `, (error, results) => {
-    if (error) return next(error)
-    res.status(200).json(results.rows)
-  })
 })
 
 router.post('/', (req, res, next) => {
