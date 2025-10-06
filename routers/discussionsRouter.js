@@ -65,12 +65,10 @@ router.get('/comment/:commentId', async (req, res) => {
     }
 });
 
-// Add these endpoints to your existing routers/discussionsRouter.js
-
 // Like/Unlike a discussion
 router.put('/discussion/:discussionId/like', async (req, res) => {
     const { discussionId } = req.params
-    const { userId, action } = req.body // action: 'like' or 'unlike'
+    const { userId, action } = req.body 
 
     if (!userId || !action) {
         return res.status(400).json({ error: 'User ID and action are required' })
@@ -78,7 +76,6 @@ router.put('/discussion/:discussionId/like', async (req, res) => {
 
     try {
         if (action === 'like') {
-            // Add like (increment likes count)
             const result = await pool.query(
                 'UPDATE discussion_start SET likes = COALESCE(likes, 0) + 1 WHERE id = $1 RETURNING *',
                 [discussionId]
@@ -93,7 +90,6 @@ router.put('/discussion/:discussionId/like', async (req, res) => {
                 discussion: result.rows[0] 
             })
         } else if (action === 'unlike') {
-            // Remove like (decrement likes count, minimum 0)
             const result = await pool.query(
                 'UPDATE discussion_start SET likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1 RETURNING *',
                 [discussionId]
@@ -119,7 +115,7 @@ router.put('/discussion/:discussionId/like', async (req, res) => {
 // Dislike/Remove dislike from a discussion
 router.put('/discussion/:discussionId/dislike', async (req, res) => {
     const { discussionId } = req.params
-    const { userId, action } = req.body // action: 'dislike' or 'undislike'
+    const { userId, action } = req.body 
 
     if (!userId || !action) {
         return res.status(400).json({ error: 'User ID and action are required' })
@@ -127,7 +123,6 @@ router.put('/discussion/:discussionId/dislike', async (req, res) => {
 
     try {
         if (action === 'dislike') {
-            // Add dislike (increment dislikes count)
             const result = await pool.query(
                 'UPDATE discussion_start SET dislikes = COALESCE(dislikes, 0) + 1 WHERE id = $1 RETURNING *',
                 [discussionId]
@@ -142,7 +137,6 @@ router.put('/discussion/:discussionId/dislike', async (req, res) => {
                 discussion: result.rows[0] 
             })
         } else if (action === 'undislike') {
-            // Remove dislike (decrement dislikes count, minimum 0)
             const result = await pool.query(
                 'UPDATE discussion_start SET dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1 RETURNING *',
                 [discussionId]
@@ -167,7 +161,7 @@ router.put('/discussion/:discussionId/dislike', async (req, res) => {
 
 router.put('/comment/:commentId/like', async (req, res) => {
     const { commentId } = req.params
-    const { userId, action } = req.body // action: 'like' or 'unlike'
+    const { userId, action } = req.body 
 
     if (!userId || !action) {
         return res.status(400).json({ error: 'User ID and action are required' })
