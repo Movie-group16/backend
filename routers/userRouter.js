@@ -23,6 +23,24 @@ router.get('/', (req, res, next) => {
     })
 })
 
+router.get('/:id', (req, res, next) => {
+    const { id } = req.params
+
+    pool.query('SELECT * FROM users WHERE id = $1', [id], (error, results) => {
+        if (error) {
+            return next(error)
+        }
+
+        if (results.rows.length === 0) {
+            const error = new Error('User not found')
+            error.status = 404
+            return next(error)
+        }
+
+        res.status(200).json(results.rows[0])
+    })
+})
+
 router.get('/:username', (req, res, next) => {
 
     const username = req.params.username
