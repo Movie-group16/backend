@@ -81,3 +81,13 @@ create table friends (
     unique(user_id, friend_id),
     check (user_id != friend_id) 
 );
+
+create table groupInvites (
+  id serial primary key,
+  group_id int not null references groups(id) on delete cascade,
+  user_id int references users(id) on delete cascade,
+  invited_by int references users(id) on delete set null,
+  status varchar(20) default 'pending',
+  created_at timestamp default current_timestamp,
+  unique(group_id, user_id)
+);
