@@ -23,14 +23,15 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
-router.put("/:userId/description", async (req, res) => {
+router.put("/:userId", async (req, res) => {
   const { userId } = req.params;
   const { description } = req.body;
+  const { email } = req.body;
 
   try {
     const result = await pool.query(
-      "UPDATE users SET user_desc = $1 WHERE id = $2 RETURNING *",
-      [description, userId]
+      "UPDATE users SET user_desc = $1, email = $2 WHERE id = $3 RETURNING *",
+      [description, email, userId]
     );
 
     if (result.rows.length === 0) {
