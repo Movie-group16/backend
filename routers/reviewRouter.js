@@ -30,14 +30,17 @@ router.get('/:id/:movieId', (req, res, next) => {
 router.post('/', (req, res, next) => {
     const { review } = req.body
 
-    if (!review || !review.user_id || !review.movie_id || !review.review_text || !review.rating) {
-        const error = new Error('User, movie, review text and rating are required')
+    console.log(review)
+
+    if (!req.body) {
+        const error = new Error('something went wrong with the review data')
+        console.log(error)
         error.status = 400
         return next(error)
     }
 
-    pool.query('INSERT INTO reviews (user_id, movie_id, review_text, rating) VALUES ($1, $2, $3, $4) RETURNING *',
-        [review.user_id, review.movie_id, review.review_text, review.rating],
+    pool.query('INSERT INTO reviews (user_id, movie_id, review_title, review_text, rating) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [review.user_id, review.movie_id, review.review_title, review.review_text, review.rating],
         (err, result) => {
         if (err) {
             return next(err)
@@ -45,6 +48,29 @@ router.post('/', (req, res, next) => {
 
         res.status(201).json({ id: result.rows[0].id, user_id: review.user_id, movie_id: review.movie_id, review_text: review.review_text, rating: review.rating })
     })
+})
+
+router.put('/:id', (req, res, next) => {
+    const { id } = req.params
+    const { review } = req.body
+    console.log(Number(id))
+    console.log(review)
+    if (!req.body) {
+        const error = new Error('something went wrong with the review data')
+        error.status = 400
+        return next(error)
+    }
+
+    pool.query('UPDATE reviews SET review_title = $1, review_text = $2, rating = $3 WHERE id = $4 RETURNING *',
+        [review.review_title, review.review_text, review.rating, id],
+        (err, result) => {
+        if (err) {
+            return next(err)
+        }
+        res.status(200).json({ id: result.rows[0].id, user_id: review.user_id, movie_id: review.movie_id, review_text: review.review_text, rating: review.rating })
+    })
+
+    
 })
 
 router.delete('/:id', (req, res, next) => {

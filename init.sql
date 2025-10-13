@@ -27,7 +27,7 @@ create table discussion_start (
     id serial primary key,
     group_id int not null,
     user_id int not null,
-    discussion_title text,
+    discussion_title varchar(100),
     discussion_text text,
     likes int,
     dislikes int
@@ -63,6 +63,7 @@ create table reviews(
     id serial primary key,
     user_id int not null,
     movie_id int not null,
+    review_title varchar(50),
     review_text text,
     rating int check (rating >= 1 and rating <= 5),
     constraint fk_review_user foreign key (user_id) references users(id) on delete cascade
