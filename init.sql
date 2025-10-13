@@ -45,7 +45,7 @@ create table discussion_comment (
     user_id int not null,
     comment_text text,
     likes int,
-    dislikes int
+    dislikes int,
     created_at timestamp default current_timestamp
 );
 
