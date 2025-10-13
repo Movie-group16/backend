@@ -4,18 +4,22 @@ import { Router } from 'express'
 const router = Router()
 
 router.get('/:groupId', async (req, res) => {
-    const { groupId } = req.params;
+    const { groupId } = req.params
     try {
         const result = await pool.query(
-            'SELECT * FROM discussion_start WHERE group_id = $1',
+            `SELECT ds.*, u.username 
+             FROM discussion_start ds
+             LEFT JOIN users u ON ds.user_id = u.id
+             WHERE ds.group_id = $1
+             ORDER BY ds.created_at DESC`,
             [groupId]
-        );
-        res.json(result.rows);
+        )
+        res.json(result.rows)
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
+        console.error(error)
+        res.status(500).send('Server error')
     }
-});
+})
 
 router.get('/discussion/:discussionId', async (req, res) => {
     const { discussionId } = req.params;
@@ -35,18 +39,22 @@ router.get('/discussion/:discussionId', async (req, res) => {
 });
 
 router.get('/discussion/:discussionId/comments', async (req, res) => {
-    const { discussionId } = req.params;
+    const { discussionId } = req.params
     try {
         const result = await pool.query(
-            'SELECT * FROM discussion_comment WHERE discussion_start_id = $1',
+            `SELECT dc.*, u.username 
+             FROM discussion_comment dc
+             LEFT JOIN users u ON dc.user_id = u.id
+             WHERE dc.discussion_start_id = $1
+             ORDER BY dc.created_at ASC`,
             [discussionId]
-        );
-        res.json(result.rows);
+        )
+        res.json(result.rows)
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
+        console.error(error)
+        res.status(500).send('Server error')
     }
-});
+})
 
 router.get('/comment/:commentId', async (req, res) => {
     const { commentId } = req.params;
@@ -67,43 +75,52 @@ router.get('/comment/:commentId', async (req, res) => {
 
 router.put('/discussion/:discussionId/like', async (req, res) => {
     const { discussionId } = req.params
-    const { userId, action } = req.body 
+    const { userId } = req.body 
 
-    if (!userId || !action) {
-        return res.status(400).json({ error: 'User ID and action are required' })
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' })
     }
 
     try {
-        if (action === 'like') {
-            const result = await pool.query(
-                'UPDATE discussion_start SET likes = COALESCE(likes, 0) + 1 WHERE id = $1 RETURNING *',
-                [discussionId]
-            )
-            
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Discussion not found' })
-            }
+        const existingLike = await pool.query(
+            'SELECT like_type FROM discussion_likes WHERE discussion_id = $1 AND user_id = $2',
+            [discussionId, userId]
+        )
 
-            res.status(200).json({ 
-                message: 'Discussion liked', 
-                discussion: result.rows[0] 
-            })
-        } else if (action === 'unlike') {
-            const result = await pool.query(
-                'UPDATE discussion_start SET likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1 RETURNING *',
-                [discussionId]
-            )
+        if (existingLike.rows.length > 0) {
+            const currentLikeType = existingLike.rows[0].like_type
             
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Discussion not found' })
+            if (currentLikeType === 'like') {
+                await pool.query(
+                    'DELETE FROM discussion_likes WHERE discussion_id = $1 AND user_id = $2',
+                    [discussionId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_start SET likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1',
+                    [discussionId]
+                )
+                return res.status(200).json({ message: 'Discussion unliked', action: 'unliked' })
+            } else {
+                await pool.query(
+                    'UPDATE discussion_likes SET like_type = $1 WHERE discussion_id = $2 AND user_id = $3',
+                    ['like', discussionId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_start SET likes = COALESCE(likes, 0) + 1, dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1',
+                    [discussionId]
+                )
+                return res.status(200).json({ message: 'Discussion liked', action: 'liked' })
             }
-
-            res.status(200).json({ 
-                message: 'Discussion unliked', 
-                discussion: result.rows[0] 
-            })
         } else {
-            return res.status(400).json({ error: 'Invalid action. Use "like" or "unlike"' })
+            await pool.query(
+                'INSERT INTO discussion_likes (discussion_id, user_id, like_type) VALUES ($1, $2, $3)',
+                [discussionId, userId, 'like']
+            )
+            await pool.query(
+                'UPDATE discussion_start SET likes = COALESCE(likes, 0) + 1 WHERE id = $1',
+                [discussionId]
+            )
+            return res.status(200).json({ message: 'Discussion liked', action: 'liked' })
         }
     } catch (error) {
         console.error('Error updating discussion likes:', error)
@@ -113,43 +130,52 @@ router.put('/discussion/:discussionId/like', async (req, res) => {
 
 router.put('/discussion/:discussionId/dislike', async (req, res) => {
     const { discussionId } = req.params
-    const { userId, action } = req.body 
+    const { userId } = req.body
 
-    if (!userId || !action) {
-        return res.status(400).json({ error: 'User ID and action are required' })
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' })
     }
 
     try {
-        if (action === 'dislike') {
-            const result = await pool.query(
-                'UPDATE discussion_start SET dislikes = COALESCE(dislikes, 0) + 1 WHERE id = $1 RETURNING *',
-                [discussionId]
-            )
-            
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Discussion not found' })
-            }
+        const existingLike = await pool.query(
+            'SELECT like_type FROM discussion_likes WHERE discussion_id = $1 AND user_id = $2',
+            [discussionId, userId]
+        )
 
-            res.status(200).json({ 
-                message: 'Discussion disliked', 
-                discussion: result.rows[0] 
-            })
-        } else if (action === 'undislike') {
-            const result = await pool.query(
-                'UPDATE discussion_start SET dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1 RETURNING *',
-                [discussionId]
-            )
+        if (existingLike.rows.length > 0) {
+            const currentLikeType = existingLike.rows[0].like_type
             
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Discussion not found' })
+            if (currentLikeType === 'dislike') {
+                await pool.query(
+                    'DELETE FROM discussion_likes WHERE discussion_id = $1 AND user_id = $2',
+                    [discussionId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_start SET dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1',
+                    [discussionId]
+                )
+                return res.status(200).json({ message: 'Discussion dislike removed', action: 'undisliked' })
+            } else {
+                await pool.query(
+                    'UPDATE discussion_likes SET like_type = $1 WHERE discussion_id = $2 AND user_id = $3',
+                    ['dislike', discussionId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_start SET dislikes = COALESCE(dislikes, 0) + 1, likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1',
+                    [discussionId]
+                )
+                return res.status(200).json({ message: 'Discussion disliked', action: 'disliked' })
             }
-
-            res.status(200).json({ 
-                message: 'Discussion undisliked', 
-                discussion: result.rows[0] 
-            })
         } else {
-            return res.status(400).json({ error: 'Invalid action. Use "dislike" or "undislike"' })
+            await pool.query(
+                'INSERT INTO discussion_likes (discussion_id, user_id, like_type) VALUES ($1, $2, $3)',
+                [discussionId, userId, 'dislike']
+            )
+            await pool.query(
+                'UPDATE discussion_start SET dislikes = COALESCE(dislikes, 0) + 1 WHERE id = $1',
+                [discussionId]
+            )
+            return res.status(200).json({ message: 'Discussion disliked', action: 'disliked' })
         }
     } catch (error) {
         console.error('Error updating discussion dislikes:', error)
@@ -159,43 +185,52 @@ router.put('/discussion/:discussionId/dislike', async (req, res) => {
 
 router.put('/comment/:commentId/like', async (req, res) => {
     const { commentId } = req.params
-    const { userId, action } = req.body 
+    const { userId } = req.body
 
-    if (!userId || !action) {
-        return res.status(400).json({ error: 'User ID and action are required' })
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' })
     }
 
     try {
-        if (action === 'like') {
-            const result = await pool.query(
-                'UPDATE discussion_comment SET likes = COALESCE(likes, 0) + 1 WHERE id = $1 RETURNING *',
-                [commentId]
-            )
-            
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Comment not found' })
-            }
+        const existingLike = await pool.query(
+            'SELECT like_type FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+            [commentId, userId]
+        )
 
-            res.status(200).json({ 
-                message: 'Comment liked', 
-                comment: result.rows[0] 
-            })
-        } else if (action === 'unlike') {
-            const result = await pool.query(
-                'UPDATE discussion_comment SET likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1 RETURNING *',
-                [commentId]
-            )
+        if (existingLike.rows.length > 0) {
+            const currentLikeType = existingLike.rows[0].like_type
             
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Comment not found' })
+            if (currentLikeType === 'like') {
+                await pool.query(
+                    'DELETE FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+                    [commentId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_comment SET likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1',
+                    [commentId]
+                )
+                return res.status(200).json({ message: 'Comment unliked', action: 'unliked' })
+            } else {
+                await pool.query(
+                    'UPDATE comment_likes SET like_type = $1 WHERE comment_id = $2 AND user_id = $3',
+                    ['like', commentId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_comment SET likes = COALESCE(likes, 0) + 1, dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1',
+                    [commentId]
+                )
+                return res.status(200).json({ message: 'Comment liked', action: 'liked' })
             }
-
-            res.status(200).json({ 
-                message: 'Comment unliked', 
-                comment: result.rows[0] 
-            })
         } else {
-            return res.status(400).json({ error: 'Invalid action. Use "like" or "unlike"' })
+            await pool.query(
+                'INSERT INTO comment_likes (comment_id, user_id, like_type) VALUES ($1, $2, $3)',
+                [commentId, userId, 'like']
+            )
+            await pool.query(
+                'UPDATE discussion_comment SET likes = COALESCE(likes, 0) + 1 WHERE id = $1',
+                [commentId]
+            )
+            return res.status(200).json({ message: 'Comment liked', action: 'liked' })
         }
     } catch (error) {
         console.error('Error updating comment likes:', error)
@@ -205,43 +240,52 @@ router.put('/comment/:commentId/like', async (req, res) => {
 
 router.put('/comment/:commentId/dislike', async (req, res) => {
     const { commentId } = req.params
-    const { userId, action } = req.body 
+    const { userId } = req.body
 
-    if (!userId || !action) {
-        return res.status(400).json({ error: 'User ID and action are required' })
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' })
     }
 
     try {
-        if (action === 'dislike') {
-            const result = await pool.query(
-                'UPDATE discussion_comment SET dislikes = COALESCE(dislikes, 0) + 1 WHERE id = $1 RETURNING *',
-                [commentId]
-            )
-            
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Comment not found' })
-            }
+        const existingLike = await pool.query(
+            'SELECT like_type FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+            [commentId, userId]
+        )
 
-            res.status(200).json({ 
-                message: 'Comment disliked', 
-                comment: result.rows[0] 
-            })
-        } else if (action === 'undislike') {
-            const result = await pool.query(
-                'UPDATE discussion_comment SET dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1 RETURNING *',
-                [commentId]
-            )
+        if (existingLike.rows.length > 0) {
+            const currentLikeType = existingLike.rows[0].like_type
             
-            if (result.rows.length === 0) {
-                return res.status(404).json({ error: 'Comment not found' })
+            if (currentLikeType === 'dislike') {
+                await pool.query(
+                    'DELETE FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+                    [commentId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_comment SET dislikes = GREATEST(COALESCE(dislikes, 0) - 1, 0) WHERE id = $1',
+                    [commentId]
+                )
+                return res.status(200).json({ message: 'Comment dislike removed', action: 'undisliked' })
+            } else {
+                await pool.query(
+                    'UPDATE comment_likes SET like_type = $1 WHERE comment_id = $2 AND user_id = $3',
+                    ['dislike', commentId, userId]
+                )
+                await pool.query(
+                    'UPDATE discussion_comment SET dislikes = COALESCE(dislikes, 0) + 1, likes = GREATEST(COALESCE(likes, 0) - 1, 0) WHERE id = $1',
+                    [commentId]
+                )
+                return res.status(200).json({ message: 'Comment disliked', action: 'disliked' })
             }
-
-            res.status(200).json({ 
-                message: 'Comment undisliked', 
-                comment: result.rows[0] 
-            })
         } else {
-            return res.status(400).json({ error: 'Invalid action. Use "dislike" or "undislike"' })
+            await pool.query(
+                'INSERT INTO comment_likes (comment_id, user_id, like_type) VALUES ($1, $2, $3)',
+                [commentId, userId, 'dislike']
+            )
+            await pool.query(
+                'UPDATE discussion_comment SET dislikes = COALESCE(dislikes, 0) + 1 WHERE id = $1',
+                [commentId]
+            )
+            return res.status(200).json({ message: 'Comment disliked', action: 'disliked' })
         }
     } catch (error) {
         console.error('Error updating comment dislikes:', error)
@@ -271,7 +315,7 @@ router.post('/discussion/create', async (req, res) => {
         // }
 
         const result = await pool.query(
-            'INSERT INTO discussion_start (group_id, user_id, discussion_title, discussion_text, likes, dislikes) VALUES ($1, $2, $3, $4, 0, 0) RETURNING *',
+            'INSERT INTO discussion_start (group_id, user_id, discussion_title, discussion_text, likes, dislikes, created_at) VALUES ($1, $2, $3, $4, 0, 0, current_timestamp) RETURNING *',
             [group_id, user_id, discussion_title, discussion_text]
         )
 
@@ -303,7 +347,7 @@ router.post('/comment/create', async (req, res) => {
         }
 
         const result = await pool.query(
-            'INSERT INTO discussion_comment (discussion_start_id, user_id, comment_text, likes, dislikes) VALUES ($1, $2, $3, 0, 0) RETURNING *',
+            'INSERT INTO discussion_comment (discussion_start_id, user_id, comment_text, likes, dislikes, created_at) VALUES ($1, $2, $3, 0, 0, current_timestamp) RETURNING *',
             [discussion_id, userId, comment_text]
         )
 
@@ -327,7 +371,7 @@ router.delete('/discussion/:discussionId', async (req, res) => {
 
     try {
         const discussionCheck = await pool.query(
-            'SELECT user_id, group_id FROM discussion_start WHERE id = $1',
+            'SELECT user_id FROM discussion_start WHERE id = $1',
             [discussionId]
         )
         
@@ -335,18 +379,16 @@ router.delete('/discussion/:discussionId', async (req, res) => {
             return res.status(404).json({ error: 'Discussion not found' })
         }
 
-        const { user_id: authorId, group_id: groupId } = discussionCheck.rows[0]
+        const authorId = discussionCheck.rows[0].user_id
 
-        const isAuthor = authorId == userId
-        const adminCheck = await pool.query(
-            'SELECT is_admin FROM groupUser WHERE user_id = $1 AND group_id = $2',
-            [userId, groupId]
-        )
-        const isAdmin = adminCheck.rows.length > 0 && adminCheck.rows[0].is_admin
-
-        if (!isAuthor && !isAdmin) {
-            return res.status(403).json({ error: 'You can only delete your own discussions or you must be a group admin' })
+        if (authorId != userId) {
+            return res.status(403).json({ error: 'You can only delete your own discussions' })
         }
+
+        const commentCount = await pool.query(
+            'SELECT COUNT(*) FROM discussion_comment WHERE discussion_start_id = $1',
+            [discussionId]
+        )
 
         const result = await pool.query(
             'DELETE FROM discussion_start WHERE id = $1 RETURNING *',
@@ -354,8 +396,9 @@ router.delete('/discussion/:discussionId', async (req, res) => {
         )
 
         res.status(200).json({
-            message: 'Discussion deleted successfully',
-            deletedDiscussion: result.rows[0]
+            message: 'Discussion and all associated comments deleted successfully',
+            deletedDiscussion: result.rows[0],
+            deletedCommentsCount: parseInt(commentCount.rows[0].count)
         })
     } catch (error) {
         console.error('Error deleting discussion:', error)
@@ -373,10 +416,7 @@ router.delete('/comment/:commentId', async (req, res) => {
 
     try {
         const commentCheck = await pool.query(
-            `SELECT dc.user_id, ds.group_id 
-             FROM discussion_comment dc
-             JOIN discussion_start ds ON dc.discussion_start_id = ds.id
-             WHERE dc.id = $1`,
+            'SELECT user_id, discussion_start_id FROM discussion_comment WHERE id = $1',
             [commentId]
         )
         
@@ -384,17 +424,10 @@ router.delete('/comment/:commentId', async (req, res) => {
             return res.status(404).json({ error: 'Comment not found' })
         }
 
-        const { user_id: authorId, group_id: groupId } = commentCheck.rows[0]
+        const { user_id: authorId, discussion_start_id: discussionId } = commentCheck.rows[0]
 
-        const isAuthor = authorId == userId
-        const adminCheck = await pool.query(
-            'SELECT is_admin FROM groupUser WHERE user_id = $1 AND group_id = $2',
-            [userId, groupId]
-        )
-        const isAdmin = adminCheck.rows.length > 0 && adminCheck.rows[0].is_admin
-
-        if (!isAuthor && !isAdmin) {
-            return res.status(403).json({ error: 'You can only delete your own comments or you must be a group admin' })
+        if (authorId != userId) {
+            return res.status(403).json({ error: 'You can only delete your own comments' })
         }
 
         const result = await pool.query(
@@ -404,12 +437,14 @@ router.delete('/comment/:commentId', async (req, res) => {
 
         res.status(200).json({
             message: 'Comment deleted successfully',
-            deletedComment: result.rows[0]
+            deletedComment: result.rows[0],
+            discussionId: discussionId
         })
     } catch (error) {
         console.error('Error deleting comment:', error)
         res.status(500).json({ error: 'Internal server error' })
     }
 })
+
 
 export default router

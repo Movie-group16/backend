@@ -143,7 +143,6 @@ router.post('/:groupId/members', (req, res, next) => {
   });
 });
 
-// For approving join request
 router.put('/:groupId/members/:userId/approve', (req, res, next) => {
   const { groupId, userId } = req.params
 
@@ -164,7 +163,6 @@ router.put('/:groupId/members/:userId/approve', (req, res, next) => {
   )
 })
 
-// For rejecting join request
 router.put('/:groupId/members/:userId/reject', (req, res, next) => {
   const { groupId, userId } = req.params
 
@@ -203,6 +201,54 @@ router.delete('/:groupId/members/:userId', (req, res, next) => {
         }
 
         res.status(200).json({ id: result.rows[0].id });
+    })
+})
+
+router.delete('/:groupId/leave', (req, res, next) => {
+    const { groupId } = req.params
+    const { userId } = req.body
+
+    if (!userId) {
+        const error = new Error('User ID is required')
+        error.status = 400
+        return next(error)
+    }
+
+    pool.query('SELECT owner_id FROM groups WHERE id = $1', [groupId], (err, groupResult) => {
+        if (err) {
+            return next(err)
+        }
+
+        if (groupResult.rows.length === 0) {
+            const error = new Error('Group not found')
+            error.status = 404
+            return next(error)
+        }
+
+        if (groupResult.rows[0].owner_id == userId) {
+            const error = new Error('Group owners cannot leave their own group. Transfer ownership or delete the group instead.')
+            error.status = 403
+            return next(error)
+        }
+
+        pool.query('DELETE FROM groupUser WHERE group_id = $1 AND user_id = $2 RETURNING *',
+            [groupId, userId],
+            (err, result) => {
+            if (err) {
+                return next(err)
+            }
+
+            if (result.rowCount === 0) {
+                const error = new Error('You are not a member of this group')
+                error.status = 404
+                return next(error)
+            }
+
+            res.status(200).json({ 
+                message: 'Successfully left the group',
+                id: result.rows[0].id 
+            })
+        })
     })
 })
 

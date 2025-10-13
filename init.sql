@@ -1,6 +1,10 @@
 
-drop table if exists groupUser;
-drop table if exists groups;
+drop table if exists discussion_likes cascade;
+drop table if exists comment_likes cascade;
+drop table if exists discussion_comment cascade;
+drop table if exists discussion_start cascade;
+drop table if exists groupUser cascade;
+drop table if exists groups cascade;
 drop table if exists users cascade;
 drop table if exists favourites cascade;
 drop table if exists reviews cascade;
