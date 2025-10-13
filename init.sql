@@ -98,3 +98,25 @@ create table groupInvites (
   created_at timestamp default current_timestamp,
   unique(group_id, user_id)
 );
+
+create table discussion_likes (
+    id serial primary key,
+    discussion_id int not null,
+    user_id int not null,
+    like_type varchar(10) not null check (like_type in ('like', 'dislike')),
+    created_at timestamp default current_timestamp,
+    foreign key (discussion_id) references discussion_start(id) on delete cascade,
+    foreign key (user_id) references users(id) on delete cascade,
+    unique(discussion_id, user_id)
+);
+
+create table comment_likes (
+    id serial primary key,
+    comment_id int not null,
+    user_id int not null,
+    like_type varchar(10) not null check (like_type in ('like', 'dislike')),
+    created_at timestamp default current_timestamp,
+    foreign key (comment_id) references discussion_comment(id) on delete cascade,
+    foreign key (user_id) references users(id) on delete cascade,
+    unique(comment_id, user_id)
+);
