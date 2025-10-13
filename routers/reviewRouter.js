@@ -27,6 +27,19 @@ router.get('/:id/:movieId', (req, res, next) => {
     })
 })
 
+router.get('/:id', (req, res, next) => {
+
+    pool.query('SELECT * FROM reviews WHERE user_id = $1', 
+        [req.params.id], 
+        (err, result) => {
+        if(err){
+            return next(err)
+        }
+
+        res.status(200).json(result.rows)
+    })
+})
+
 router.post('/', (req, res, next) => {
     const { review } = req.body
 
@@ -94,5 +107,30 @@ router.delete('/:id', (req, res, next) => {
         res.status(200).json({ id: result.rows[0].id });
     })
 })
+
+router.put("/:id", async (req, res, next) => {
+  const { id } = req.params;
+  const { review_text} = req.body;
+  const { rating } = req.body;
+
+ pool.query(
+    'UPDATE reviews SET review_text = $1, rating = $2 WHERE id = $3 RETURNING *',
+    [review_text, rating, id],
+    (error, result) => {
+      if (error) {
+        return next(error);
+      }
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Review not found' });
+      }
+
+      res.status(200).json({
+        message: 'Review updated successfully',
+        review: result.rows[0]
+      });
+    }
+  );
+});
 
 export default router

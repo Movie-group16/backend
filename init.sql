@@ -1,10 +1,14 @@
 
-drop table if exists groupUser;
-drop table if exists groups;
+drop table if exists discussion_likes cascade;
+drop table if exists comment_likes cascade;
+drop table if exists discussion_comment cascade;
+drop table if exists discussion_start cascade;
+drop table if exists groupUser cascade;
+drop table if exists groups cascade;
 drop table if exists users cascade;
 drop table if exists favourites cascade;
 drop table if exists reviews cascade;
-
+drop table if exists friends cascade;
 
 
 create table users (
@@ -47,6 +51,7 @@ create table groupUser (
     user_id int not null,
     group_id int not null,
     is_admin boolean default false,
+    status varchar(20) default 'pending',
     foreign key (user_id) references users(id),
     constraint fk_groupUser_group foreign key (group_id) references groups(id) on delete cascade,
     unique(user_id, group_id)
@@ -80,4 +85,14 @@ create table friends (
     foreign key (friend_id) references users(id) on delete cascade,
     unique(user_id, friend_id),
     check (user_id != friend_id) 
+);
+
+create table groupInvites (
+  id serial primary key,
+  group_id int not null references groups(id) on delete cascade,
+  user_id int references users(id) on delete cascade,
+  invited_by int references users(id) on delete set null,
+  status varchar(20) default 'pending',
+  created_at timestamp default current_timestamp,
+  unique(group_id, user_id)
 );
