@@ -46,6 +46,7 @@ create table discussion_comment (
     comment_text text,
     likes int,
     dislikes int
+    created_at timestamp default current_timestamp
 );
 
 create table groupUser (
