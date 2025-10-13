@@ -54,23 +54,71 @@ router.get('/:username', (req, res, next) => {
     })
 })
 
-router.delete('/delete/:id', (req, res, next) => {
+router.delete('/delete/:id', async (req, res, next) => {
     const { id } = req.params
 
-    console.log(`Deleting user with id: ${id}`)
-    pool.query('delete from users WHERE id = $1',
-        [id], (err, result) => {
-        if (err) {
-        console.error(err.message)
-        return next(err)
+    try {
+        const ownedGroupsResult = await pool.query(
+            'SELECT id, group_name FROM groups WHERE owner_id = $1',
+            [id]
+        )
+        
+        const ownedGroups = ownedGroupsResult.rows
+
+        const userCommentsResult = await pool.query(
+            'SELECT COUNT(*) as comment_count FROM discussion_comment WHERE user_id = $1',
+            [id]
+        )
+        
+        const commentCount = parseInt(userCommentsResult.rows[0].comment_count)
+
+        const userDiscussionsResult = await pool.query(
+            'SELECT COUNT(*) as discussion_count FROM discussion_start WHERE user_id = $1',
+            [id]
+        )
+        
+        const discussionCount = parseInt(userDiscussionsResult.rows[0].discussion_count)
+
+        if (ownedGroups.length > 0) {
+            await pool.query(
+                'DELETE FROM groups WHERE owner_id = $1 RETURNING id, group_name',
+                [id]
+            )
         }
-        if (result.rowCount === 0) {
+        const deleteCommentsResult = await pool.query(
+            'DELETE FROM discussion_comment WHERE user_id = $1 RETURNING id',
+            [id]
+        )
+
+        const deleteDiscussionsResult = await pool.query(
+            'DELETE FROM discussion_start WHERE user_id = $1 RETURNING id',
+            [id]
+        )
+        const deleteUserResult = await pool.query(
+            'DELETE FROM users WHERE id = $1 RETURNING *',
+            [id]
+        )
+
+        if (deleteUserResult.rowCount === 0) {
             const error = new Error('user not found')
             error.status = 404
-        return next(error)
+            return next(error)
         }
-        return res.status(200).json({id:id})
-    })
+
+        return res.status(200).json({
+            id: id,
+            message: `User deleted successfully`,
+            deletedGroups: ownedGroups.length,
+            groupNames: ownedGroups.map(g => g.group_name),
+            deletedComments: deleteCommentsResult.rows.length,
+            deletedDiscussions: deleteDiscussionsResult.rows.length,
+            totalComments: commentCount,
+            totalDiscussions: discussionCount
+        })
+
+    } catch (err) {
+        return next(err)
+    }
 })
 
 router.post('/register', (req, res, next) => {
