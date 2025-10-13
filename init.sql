@@ -9,6 +9,7 @@ drop table if exists users cascade;
 drop table if exists favourites cascade;
 drop table if exists reviews cascade;
 drop table if exists friends cascade;
+drop table if exists groupInvites cascade;
 
 
 create table users (
@@ -34,7 +35,8 @@ create table discussion_start (
     discussion_title varchar(100),
     discussion_text text,
     likes int,
-    dislikes int
+    dislikes int,
+    created_at timestamp default current_timestamp
 );
 
 create table discussion_comment (
