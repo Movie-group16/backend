@@ -41,7 +41,7 @@ router.get('/:id', (req, res, next) => {
     })
 })
 
-router.get('/:username', (req, res, next) => {
+router.get('/user/:username', (req, res, next) => {
 
     const username = req.params.username
 
