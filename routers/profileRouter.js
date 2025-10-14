@@ -45,4 +45,23 @@ router.put("/:userId", async (req, res) => {
   }
 });
 
+router.get('/groups/:userId', async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const query = `
+      SELECT g.id, g.group_name, g.group_desc, g.group_rules, gu.is_admin
+      FROM groupUser AS gu
+      INNER JOIN groups AS g ON gu.group_id = g.id
+      WHERE gu.user_id = $1 AND gu.status = 'member'
+      ORDER BY g.group_name ASC
+    `;
+    const result = await pool.query(query, [userId]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching user groups:', err);
+    res.status(500).json({ error: 'Failed to fetch user groups' });
+  }
+});
+
+
 export default router
