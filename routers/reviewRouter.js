@@ -108,14 +108,15 @@ router.delete('/:id', (req, res, next) => {
     })
 })
 
-router.put("/:id", async (req, res, next) => {
+router.put("/review/:id", async (req, res, next) => {
   const { id } = req.params;
   const { review_text} = req.body;
+  const { review_title } = req.body;
   const { rating } = req.body;
-
+  
  pool.query(
-    'UPDATE reviews SET review_text = $1, rating = $2 WHERE id = $3 RETURNING *',
-    [review_text, rating, id],
+    'UPDATE reviews SET review_text = $1, review_title = $2, rating = $3 WHERE id = $4 RETURNING *',
+    [review_text, review_title, rating, id],
     (error, result) => {
       if (error) {
         return next(error);
