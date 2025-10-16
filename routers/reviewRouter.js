@@ -45,7 +45,7 @@ router.post('/', (req, res, next) => {
 
     console.log(review)
 
-    if (!req.body) {
+    if (!req.body || !req.body.review) {
         const error = new Error('something went wrong with the review data')
         console.log(error)
         error.status = 400
@@ -68,7 +68,7 @@ router.put('/:id', (req, res, next) => {
     const { review } = req.body
     console.log(Number(id))
     console.log(review)
-    if (!req.body) {
+    if (!req.body || !req.body.review) {
         const error = new Error('something went wrong with the review data')
         error.status = 400
         return next(error)
@@ -77,8 +77,9 @@ router.put('/:id', (req, res, next) => {
     pool.query('UPDATE reviews SET review_title = $1, review_text = $2, rating = $3 WHERE id = $4 RETURNING *',
         [review.review_title, review.review_text, review.rating, id],
         (err, result) => {
-        if (err) {
-            return next(err)
+        if (err) return next(err);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Review not found" });
         }
         res.status(200).json({ id: result.rows[0].id, user_id: review.user_id, movie_id: review.movie_id, review_text: review.review_text, rating: review.rating })
     })
